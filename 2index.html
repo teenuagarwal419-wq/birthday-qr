@@ -1,0 +1,323 @@
+
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Birthday Love Surprise</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+font-family:Arial,sans-serif;
+overflow:hidden;
+height:100vh;
+background:linear-gradient(135deg,#ff9bd2,#ffdff4,#fff0a7);
+color:white;
+}
+.scene{
+position:fixed;
+inset:0;
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+padding:30px;
+text-align:center;
+}
+.active{display:flex}
+h1{font-size:3rem;text-shadow:2px 4px 12px rgba(0,0,0,.3)}
+p{line-height:1.8}
+button{
+margin-top:28px;
+padding:15px 32px;
+border:none;
+border-radius:50px;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 8px 25px rgba(0,0,0,.15);
+}
+#countdownNum{
+font-size:5rem;
+margin-top:20px;
+animation:pulse 1.5s infinite;
+}
+@keyframes pulse{50%{transform:scale(1.1)}}
+
+/* Balloons */
+#balloonScene{position:fixed;inset:0;display:none}
+#balloonScene.active{display:block}
+.instructions{
+position:absolute;top:20px;left:50%;transform:translateX(-50%);
+background:rgba(255,255,255,.25);padding:14px 22px;border-radius:40px
+}
+.balloon{
+position:absolute;
+width:78px;height:100px;border-radius:50%;
+display:flex;justify-content:center;align-items:center;
+font-weight:bold;cursor:pointer;
+animation:float 4s ease-in-out infinite;
+}
+.balloon:before{
+content:'';position:absolute;height:60px;width:3px;background:#fff;top:96px;
+}
+@keyframes float{50%{transform:translateY(-24px)}}
+.pop{animation:pop .4s forwards}
+@keyframes pop{100%{transform:scale(2);opacity:0}}
+.reveal{
+position:absolute;font-size:2rem;font-weight:bold;
+opacity:0;transform:scale(0);transition:.6s;
+}
+.reveal.show{opacity:1;transform:scale(1)}
+#birthdayBig{
+position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.5);
+opacity:0;font-size:4rem;font-weight:bold;transition:1s;
+}
+#birthdayBig.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+/* Cake */
+.cake{font-size:8rem;animation:pulse 2s infinite}
+
+/* Love story */
+#storyBox{
+max-width:850px;
+background:rgba(255,255,255,.15);
+backdrop-filter:blur(8px);
+padding:35px;
+border-radius:30px;
+box-shadow:0 8px 30px rgba(0,0,0,.15);
+}
+#typed{
+font-size:1.35rem;
+min-height:300px;
+white-space:pre-line;
+}
+.cursor{display:inline-block;animation:pulse .8s infinite}
+.heart{
+position:fixed;
+font-size:24px;
+animation:fall 7s linear infinite;
+}
+@keyframes fall{
+from{transform:translateY(-100px)}
+to{transform:translateY(110vh)}
+}
+canvas{position:fixed;inset:0;pointer-events:none}
+@media(max-width:700px){
+h1{font-size:2rem}
+#countdownNum{font-size:3.2rem}
+#birthdayBig{font-size:2.2rem;width:90%}
+#typed{font-size:1rem;min-height:350px}
+.balloon{width:62px;height:80px}
+.balloon:before{top:78px;height:45px}
+}
+</style>
+</head>
+<body>
+<canvas id='conf'></canvas>
+
+<!-- Countdown -->
+<section id='countScene' class='scene active'>
+<h1>🎉 Countdown To 1 May 🎉</h1>
+<div id='countdownNum'>Loading...</div>
+<button id='enterBtn' style='display:none' onclick='startBalloons()'>Open Surprise ❤️</button>
+</section>
+
+<!-- Balloons -->
+<section id='balloonScene'>
+<div class='instructions'>Pop all balloons 🎈</div>
+<div id='birthdayBig'>HAPPY BIRTHDAY TO YOU 🎉</div>
+</section>
+
+<!-- Cake -->
+<section id='cakeScene' class='scene'>
+<div class='cake' id='cakeEmoji'>🎂</div>
+<h1>Happy Birthday My Love ❤️</h1>
+<button onclick='cutCake()'>Cut The Cake 🎉</button>
+</section>
+
+<!-- Cake Cutting Animation -->
+<section id='cutScene' class='scene'>
+<div style='font-size:120px;animation:pulse 2s infinite'>🍰</div>
+<h1 style='margin-top:20px'>Cake Cut Successfully 🎉</h1>
+<p>Make a wish... 💖</p>
+<button onclick='startStory()'>Read My Heart →</button>
+</section>
+
+<!-- Story -->
+<section id='storyScene' class='scene'>
+<div id='storyBox'>
+<h1 style='font-size:2.2rem'>For You 💌</h1>
+<p id='typed'></p>
+<button id='nextBtn' onclick='nextSlide()'>Next Message</button>
+</div>
+</section>
+
+<script>
+// countdown FIXED (button now appears + auto advances)
+const target=new Date('May 1, 2026 00:00:00').getTime();
+let entered=false;
+
+function autoStart(){
+ if(entered) return;
+ entered=true;
+ document.getElementById('countScene').classList.remove('active');
+ startBalloons();
+}
+
+function tick(){
+let now=new Date().getTime();
+let diff=target-now;
+
+if(diff<=0){
+document.getElementById('countdownNum').innerHTML='🎂 Today Is The Day!';
+document.getElementById('enterBtn').style.display='inline-block';
+setTimeout(autoStart,2500);
+return;
+}
+
+let d=Math.floor(diff/(1000*60*60*24));
+let h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+let m=Math.floor((diff%(1000*60*60))/(1000*60));
+let s=Math.floor((diff%(1000*60))/1000);
+
+document.getElementById('countdownNum').innerHTML=
+d+'d '+h+'h '+m+'m '+s+'s';
+}
+setInterval(tick,1000);
+tick();
+
+setTimeout(()=>{
+if(!entered){
+document.getElementById('enterBtn').style.display='inline-block';
+document.getElementById('enterBtn').innerText='Open Surprise ❤️';
+}
+},3000);
+
+// balloons
+const words=['HAPPY','BIRTHDAY','TO','YOU'];
+const colors=['#ff4fa3','#66dfff','#ffe14d','#9cff9f'];
+const pos=[['12%','60%'],['35%','30%'],['58%','62%'],['80%','34%']];
+let popped=0;
+function startBalloons(){
+if(document.getElementById('balloonScene').classList.contains('active')) return;
+document.getElementById('countScene').classList.remove('active');
+let s=document.getElementById('balloonScene');
+s.classList.add('active');
+for(let i=0;i<4;i++){
+let w=document.createElement('div');
+w.className='reveal';w.innerText=words[i];
+w.style.left=pos[i][0];w.style.top=pos[i][1];s.appendChild(w);
+let b=document.createElement('div');
+b.className='balloon';b.innerHTML='?';
+b.style.background=colors[i];
+b.style.left=pos[i][0];b.style.top=pos[i][1];
+s.appendChild(b);
+b.onclick=()=>{
+if(b.done)return;b.done=1;
+b.classList.add('pop');w.classList.add('show');burst(b.offsetLeft,b.offsetTop);
+setTimeout(()=>b.remove(),350);
+popped++;
+if(popped==4){
+setTimeout(()=>{document.getElementById('birthdayBig').classList.add('show');confetti();},800)
+setTimeout(()=>{
+s.classList.remove('active');
+document.getElementById('cakeScene').classList.add('active');
+},4000)
+}
+}
+}
+}
+
+// Love story slides
+const slides=[
+`Happy Birthday My Love ❤️\n\nAap door hai, par har dhadkan mein aap hi aap ho...\nMiss you so much jaan.\nMiles apart, but never apart at heart.`,
+`Birthday apka hai, gift maangne ka mann mera hai — bas aapki presence.\nTumhari yaadon se zyada sukoon kahin nahi.\nAaj door ho toh kya, meri rooh hamesha tumhare saath hai.`,
+`Happy Birthday to the man who holds my heart.\nMere har khwaab mein sirf aap... har dua mein aapka saath.\nI love you endlessly.`,
+`Aap mere liye sirf ek insan nahi... meri sukoon wali jagah ho.\nJahan main apni puri duniya basana chahti hu.`,
+`Aap mere liye wo dua ho jo maine shiddat se maangi thi.\nGift nahi... apni poori zindagi dena chahti hu.\nYou are my home, my everything.`,
+`Happy Birthday Boo ❤️\nAaj aur hamesha... I choose you.\nForever yours.`
+];
+let slide=0;
+function cutCake(){
+document.getElementById('cakeScene').classList.remove('active');
+document.getElementById('cutScene').classList.add('active');
+confetti();
+}
+
+function startStory(){
+document.getElementById('cakeScene').classList.remove('active');
+document.getElementById('storyScene').classList.add('active');
+makeHearts();
+showTyping(slides[0]);
+}
+function nextSlide(){
+slide++;
+if(slide>=slides.length){
+document.getElementById('typed').innerHTML='I LOVE YOU ENDLESSLY ❤️';
+document.getElementById('nextBtn').style.display='none';
+confetti();
+return;
+}
+showTyping(slides[slide]);
+}
+function showTyping(text){
+let el=document.getElementById('typed');
+el.innerHTML='';
+let i=0;
+let timer=setInterval(()=>{
+el.innerHTML=text.slice(0,i)+'<span class="cursor">|</span>';
+i++;
+if(i>text.length){clearInterval(timer);el.innerHTML=text;}
+},35)
+}
+
+function makeHearts(){
+setInterval(()=>{
+let h=document.createElement('div');
+h.className='heart';
+h.innerHTML='💖';
+h.style.left=Math.random()*100+'vw';
+document.body.appendChild(h);
+setTimeout(()=>h.remove(),7000)
+},700)
+}
+
+function burst(x,y){
+for(let i=0;i<10;i++){
+let p=document.createElement('div');
+p.innerHTML=Math.random()>.5?'✨':'💖';
+p.style.position='fixed';
+p.style.left=x+'px';
+p.style.top=y+'px';
+document.body.appendChild(p);
+let a=Math.random()*360,d=80;
+p.animate([{transform:'translate(0,0)'},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`,opacity:0}],{duration:800});
+setTimeout(()=>p.remove(),800)
+}
+}
+
+// confetti
+let canvas=document.getElementById('conf'),ctx=canvas.getContext('2d');
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+resize();onresize=resize;
+let pcs=[];
+function confetti(){for(let i=0;i<220;i++)pcs.push({x:Math.random()*canvas.width,y:-20,r:4+Math.random()*4,s:2+Math.random()*3})}
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+pcs.forEach(p=>{
+ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.28);
+ctx.fillStyle=['#ff4fa3','#66dfff','#ffe14d','#9cff9f'][Math.floor(Math.random()*4)];
+ctx.fill(); p.y+=p.s; if(p.y>canvas.height)p.y=-20;
+});
+requestAnimationFrame(draw)
+}
+draw();
+</script>
+</body>
+</html>
+```
+
+
